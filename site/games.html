@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Games — cripter</title>
+<meta name="description" content="Roblox games cripter has built the backend for.">
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <a href="index.html" class="brand">cripter<span>.dev</span></a>
+    <nav>
+      <a href="index.html">home</a>
+      <a href="games.html" class="active">games</a>
+      <a href="systems.html">systems</a>
+      <a href="index.html#contact">contact</a>
+    </nav>
+    <div class="status"><span class="dot"></span>open for work</div>
+  </div>
+
+  <section class="page-title">
+    <h1>Games</h1>
+    <p>Projects I've built the backend and systems for. Visits and live players update automatically from Roblox — sorted by players online, then total visits.</p>
+  </section>
+
+  <div id="editBanner" style="display:none"></div>
+
+  <section class="section" style="padding-top:36px">
+    <div class="game-grid" id="gameGrid"></div>
+  </section>
+</div>
+
+<footer><div class="wrap">
+  <span>© 2026 cripter · Roblox Backend Engineer</span>
+  <span>Discord: dristun_skibidi</span>
+</div></footer>
+
+<script src="data/games.js"></script>
+<script src="data/csv-parser.js"></script>
+<script>
+  // EDIT MODE: only when the URL ends with ?edit
+  // Visitors never see the CSV loader. You work on games.html?edit
+  const EDIT = new URLSearchParams(location.search).has('edit');
+
+  const grid = document.getElementById('gameGrid');
+  const entries = [];
+  const charts = {};
+
+  if (EDIT) {
+    const b=document.getElementById('editBanner');
+    b.style.display='block';
+    b.innerHTML='<div style="border:1px solid var(--accent);background:rgba(61,214,140,.08);'+
+      'border-radius:10px;padding:14px 18px;font-family:var(--mono);font-size:13px;color:var(--accent)">'+
+      'EDIT MODE — CSV loaders are visible to you only. Visitors at games.html (no ?edit) won\'t see them. '+
+      'Load a CSV, name it, then copy the generated snippet into data/games.js to make it permanent.</div>';
+  }
+
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function parseManual(v){
+    if (!v || v === '—') return 0;
+    const m = String(v).trim().match(/^([\d.]+)\s*([bmk]?)/i);
+    if (!m) return 0;
+    let n = parseFloat(m[1]);
+    const u = m[2].toLowerCase();
+    if (u==='b') n*=1e9; else if (u==='m') n*=1e6; else if (u==='k') n*=1e3;
+    return n;
+  }
+
+  function buildChart(canvas, labels, values, label, unit){
+    return new Chart(canvas, {
+      type:'line',
+      data:{ labels:labels, datasets:[{
+        data:values, label:label||'', borderColor:'#3dd68c',
+        backgroundColor:'rgba(61,214,140,.12)', fill:true, tension:.35,
+        borderWidth:2, pointRadius:2, pointBackgroundColor:'#3dd68c' }] },
+      options:{ responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{display:false},
+          tooltip:{callbacks:{label:(c)=> (label?label+': ':'') + c.parsed.y + (unit||'')}} },
+        scales:{
+          x:{grid:{color:'#1e2832'},ticks:{color:'#5a6b78',font:{family:'JetBrains Mono',size:10},maxTicksLimit:8}},
+          y:{grid:{color:'#1e2832'},ticks:{color:'#5a6b78',font:{family:'JetBrains Mono',size:10},
+             callback:(v)=> v + (unit||'')}}
+        } }
+    });
+  }
+
+  // always render charts inside a fixed-height wrapper (prevents infinite growth)
+  function ensureCanvas(i){
+    let canvas=document.getElementById('chart'+i);
+    if (canvas) return canvas;
+    const empty=document.getElementById('empty'+i);
+    if (empty) empty.remove();
+    const wrap=document.createElement('div');
+    wrap.className='chart-canvas-wrap';
+    canvas=document.createElement('canvas');
+    canvas.id='chart'+i;
+    wrap.appendChild(canvas);
+    const head=document.querySelector('#chartbox'+i+' .chart-head');
+    head.insertAdjacentElement('afterend', wrap);
+    return canvas;
+  }
+
+  GAMES.forEach((g, i) => {
+    const hasChart = g.chart && g.chart.values && g.chart.values.length > 0;
+
+    const statusClass = g.status==='live'?'live':(g.status==='showcase'?'live':'delisted');
+    const statusLabel = g.status==='live'?'● live':(g.status==='showcase'?'◆ showcase':'○ '+g.status);
+
+    const linkBtn = g.url
+      ? '<a href="'+g.url+'" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Play on Roblox →</a>'
+      : '';
+
+    const coverInner = g.manualThumb
+      ? '<img id="cover'+i+'" src="'+g.manualThumb+'" alt="'+esc(g.title)+'">'
+      : '<div class="ph" id="ph'+i+'">COVER</div><img id="cover'+i+'" alt="'+esc(g.title)+'" style="display:none">';
+
+    let statsHTML='';
+    if (g.showStats){
+      const iv=g.forceManual?(g.manualVisits||'—'):'…';
+      const ip=g.forceManual?(g.manualPlaying||'—'):'…';
+      let cells='<div><div class="v" id="playing'+i+'">'+ip+'</div><div class="k">playing now</div></div>'+
+                '<div><div class="v" id="visits'+i+'">'+iv+'</div><div class="k">visits</div></div>';
+      if (g.maxCcu) cells+='<div><div class="v">'+esc(g.maxCcu)+'</div><div class="k">peak ccu</div></div>';
+      statsHTML='<div class="g-stats">'+cells+'</div>';
+    }
+
+    let metricsHTML='';
+    if (g.metrics && g.metrics.length){
+      metricsHTML='<div class="metrics">'+g.metrics.map(m=>
+        '<div class="metric"><div class="mv">'+esc(m.value)+'</div><div class="ml">'+esc(m.label)+'</div></div>'
+      ).join('')+'</div>';
+    }
+
+    // chart label: custom title from data, else default
+    const chartTitle = (g.chart && g.chart.title) ? g.chart.title : 'Monthly visits';
+
+    // CSV loader UI only in EDIT mode
+    const csvUI = EDIT
+      ? '<button class="csv-btn" id="csvbtn'+i+'">＋ Load CSV</button>'
+      : '';
+
+    const card=document.createElement('div');
+    card.className='game';
+    card.innerHTML=
+      '<div class="cover">'+coverInner+
+        '<span class="live-tag '+statusClass+'">'+statusLabel+'</span></div>'+
+      '<div class="body">'+
+        '<h3>'+esc(g.title)+'</h3>'+
+        '<div class="g-tagline">'+esc(g.tagline)+'</div>'+
+        '<div class="g-role">'+esc(g.role)+'</div>'+
+        '<p class="desc">'+esc(g.desc)+'</p>'+
+        statsHTML+
+        metricsHTML+
+        '<div class="tags">'+g.tags.map(t=>'<span class="tag">'+esc(t)+'</span>').join('')+'</div>'+
+        '<div class="g-foot">'+linkBtn+'</div>'+
+        ((hasChart || EDIT) ?
+          '<div class="chart-box" id="chartbox'+i+'">'+
+            '<div class="chart-head">'+
+              '<span class="ch-label" id="chlabel'+i+'">'+esc(chartTitle)+'</span>'+
+              csvUI +
+            '</div>'+
+            (hasChart ? '<div class="chart-canvas-wrap"><canvas id="chart'+i+'"></canvas></div>'
+                      : '<div class="chart-empty" id="empty'+i+'">No chart yet</div>')+
+            (EDIT ? '<input type="file" id="csvinput'+i+'" accept=".csv" style="display:none">'+
+                    '<div class="csv-note">EDIT: drop a Roblox Analytics .csv here to preview & get a snippet.</div>'+
+                    '<div id="snippet'+i+'"></div>'
+                  : '')+
+          '</div>'
+          : '')+
+      '</div>';
+    grid.appendChild(card);
+
+    const entry={ el:card, playingRaw:0, visitsRaw:parseManual(g.manualVisits),
+                  ccuRaw:parseManual(g.maxCcu), showcase:(g.status==='showcase') };
+    entries.push(entry);
+
+    if (hasChart){
+      charts[i]=buildChart(document.getElementById('chart'+i), g.chart.labels, g.chart.values,
+                           g.chart.title||'', g.chart.unit||'');
+    }
+
+    // ---- EDIT-only CSV loading ----
+    if (EDIT){
+      function showSnippet(parsed){
+        const snip = 'chart: {\n'+
+          '      title: "'+parsed.metric+'",\n'+
+          '      unit: "'+parsed.unit+'",\n'+
+          '      labels: '+JSON.stringify(parsed.labels)+',\n'+
+          '      values: '+JSON.stringify(parsed.values)+'\n'+
+          '    },';
+        const box=document.getElementById('snippet'+i);
+        box.innerHTML='<div style="margin-top:10px">'+
+          '<div style="font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-bottom:6px">'+
+          'Paste this as the game\'s chart field in data/games.js to make it permanent:</div>'+
+          '<textarea readonly style="width:100%;height:90px;background:#0c1217;color:#3dd68c;'+
+          'border:1px solid var(--line);border-radius:6px;font-family:var(--mono);font-size:11px;padding:10px">'+
+          esc(snip)+'</textarea></div>';
+      }
+      function loadCsvText(text){
+        const parsed=CsvParser.parse(text);
+        if (!parsed){ alert('Could not read that CSV. Expected a Roblox Analytics export.'); return; }
+        const canvas=ensureCanvas(i);
+        if (charts[i]) charts[i].destroy();
+        charts[i]=buildChart(canvas, parsed.labels, parsed.values, parsed.metric, parsed.unit);
+        document.getElementById('chlabel'+i).textContent=parsed.metric;
+        showSnippet(parsed);
+      }
+      function handleFile(file){ if(!file) return; const r=new FileReader(); r.onload=()=>loadCsvText(r.result); r.readAsText(file); }
+      const input=document.getElementById('csvinput'+i);
+      document.getElementById('csvbtn'+i).addEventListener('click',()=>input.click());
+      input.addEventListener('change',e=>handleFile(e.target.files[0]));
+      const box=document.getElementById('chartbox'+i);
+      box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('drag');});
+      box.addEventListener('dragleave',()=>box.classList.remove('drag'));
+      box.addEventListener('drop',e=>{e.preventDefault();box.classList.remove('drag');
+        if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);});
+    }
+
+    // ---- live stats ----
+    if (!g.forceManual && g.placeId){
+      RoStats.fetchOne(g.placeId).then(s=>{
+        if (g.showStats){
+          const pEl=document.getElementById('playing'+i);
+          if (s.playingRaw>0) pEl.innerHTML='<span class="live-dot"></span>'+(s.playing||'0');
+          else pEl.textContent=s.playing||'0';
+          document.getElementById('visits'+i).textContent=s.visits||g.manualVisits||'—';
+        }
+        if (s.thumb && !g.manualThumb){
+          const img=document.getElementById('cover'+i), ph=document.getElementById('ph'+i);
+          img.style.objectFit=s.thumb.wide?'cover':'contain';
+          img.onload=()=>{img.style.display='block'; if(ph) ph.style.display='none';};
+          img.src=s.thumb.url;
+        }
+        entry.playingRaw=s.playingRaw; entry.visitsRaw=s.visitsRaw;
+        resort();
+      }).catch(()=>{
+        if (g.showStats){
+          document.getElementById('playing'+i).textContent=g.manualPlaying||'—';
+          document.getElementById('visits'+i).textContent=g.manualVisits||'—';
+        }
+      });
+    }
+  });
+
+  function resort(){
+    entries.slice().sort((a,b)=>
+      (a.showcase-b.showcase)||(b.playingRaw-a.playingRaw)||
+      (b.visitsRaw-a.visitsRaw)||(b.ccuRaw-a.ccuRaw)
+    ).forEach(e=>grid.appendChild(e.el));
+  }
+  resort();
+</script>
+</body>
+</html>
