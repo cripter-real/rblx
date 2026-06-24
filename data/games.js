@@ -98,8 +98,8 @@ const GAMES = [
     maxCcu: "~59",
     manualThumb: "",
     metrics: [],
-    tags: ["Tower Defense", "Best Optimization", "like Anime Vanguards lol"],
-    desc: "built the server-side systems: wave logic, currency economy, and persistent player progression with safe data saving. DM for Stats",
+    tags: ["Tower Defense", "Gacha / summon", "3-place universe", "ProfileStore", "BridgeNet2", "like Anime Vanguards lol"],
+    desc: "Whole server side: TD core, gacha summon with trait rolls, unit progression & evolutions, economy, and a 3-place universe with shared progress (hub / match / AFK chamber). Server-authoritative combat, ProfileStore data layer, 20+ CMDR admin commands. DM for Stats",
     chart: {
       labels: [],
       values: []
@@ -137,8 +137,8 @@ const GAMES = [
     maxCcu: "1.8K",
     manualThumb: "",
     metrics: [{ label: "AVG Playtime", value: "27.1m" }, { label: "Session time", value: "18.4m" }, { label: "D1 retention", value: "13%" }, { label: "D7 retention", value: "0.63%" }, { label: "ARPPU", value: "60 R$" }],
-    tags: ["Simulator", "Progression", "Incremental", "Cash-Grab"],
-    desc: "designed the digging progression loop and data layer — depth tracking, upgrades, and reliable saves. DM for more Stats",
+    tags: ["Simulator", "Progression", "Incremental", "Shared engine"],
+    desc: "An earlier simulator built on the shared engine that later grew into my plot-based games. Designed the digging progression loop and data layer — depth tracking, upgrades, and reliable saves. DM for more Stats",
     chart: {
       title: "Day 1 retention",
       unit: "%",
@@ -160,8 +160,8 @@ const GAMES = [
     maxCcu: "~30",
     manualThumb: "",
     metrics: [],
-    tags: ["Simulator", "Progression", "Incremental", "Cash-Grab", "Brainrot"],
-    desc: "designed the digging progression loop and data layer — depth tracking, upgrades, and reliable saves.",
+    tags: ["Simulator", "Progression", "Incremental", "Shared engine", "Brainrot"],
+    desc: "Another simulator on the same shared engine, before plots were added. Digging progression loop and data layer — depth tracking, upgrades, and reliable saves.",
     chart: { labels: [], values: [] }
   },
   {
@@ -178,8 +178,8 @@ const GAMES = [
     maxCcu: "43",
     manualThumb: "",
     metrics: [],
-    tags: ["Simulator", "Cash-Grab", "Rebirth", "Plot system", "Brainrot"],
-    desc: "built the core gameplay backend and optimized server performance for fast dig-loop sessions.",
+    tags: ["Simulator", "Rebirth", "Plot system", "ProfileStore", "Anti-dupe", "Brainrot"],
+    desc: "My newest dig game — the evolution of the engine behind my earlier simulators, now with a plot/rebirth system layered on top. ProfileStore data with anti-dupe, server-validated economy, BridgeNet2 networking. Optimized for fast dig-loop sessions.",
     chart: { labels: [], values: [] }
   },
   {
@@ -198,6 +198,24 @@ const GAMES = [
     metrics: [],
     tags: ["Tycoon", "Prove mom wrong", "Cash-Grab"],
     desc: "Deleted game, no longer live. We had ~4 games like that (tycoon)",
+    chart: { labels: [], values: [] }
+  },
+  {
+    title: "Scratch for Brainrots",
+    tagline: "Scratch-card gacha sim — in the works",
+    role: "backend / systems + some VFX",
+    status: "in-dev",
+    placeId: "",
+    url: "",
+    showStats: false,
+    forceManual: true,
+    manualVisits: "—",
+    manualPlaying: "—",
+    maxCcu: "",
+    manualThumb: "",
+    metrics: [],
+    tags: ["Simulator", "Gacha / RNG", "Lucky Block", "Offline earning", "ProfileStore", "Anti-dupe"],
+    desc: "Upcoming. Scratch a ticket → jackpot → Lucky Block → brainrot on your plot → passive income → upgrades → rebirth. ~35 server systems on my reused framework: server-validated ticket rolls, a Lucky Block reward roulette I built with CFrame 3D math, and jackpot curves modeled with probability theory. Data-driven economy (16 tickets, 12 coin tiers, 20 rebirths).",
     chart: { labels: [], values: [] }
   }
 
@@ -255,12 +273,12 @@ const GAMES = [
    SYSTEMS — what you build. Edit freely.
    ============================================================ */
 const SYSTEMS = [
-  { code:"data", title:"Data persistence", desc:"DataStore architecture with session locking, retry logic, and schema migrations — built so player progress never silently disappears." },
-  { code:"net",  title:"Networking & replication", desc:"Client-server communication, remote event design, and traffic optimization that holds up under real player load." },
-  { code:"sec",  title:"Anti-exploit & validation", desc:"Server-authoritative validation of every meaningful action. Protecting the economy from duping and remote abuse." },
-  { code:"sys",  title:"Gameplay systems", desc:"Inventories, economies, progression, and combat — written modular and scalable, ready for a game that grows." },
-  { code:"perf", title:"Performance & optimization", desc:"Profiling server scripts, cutting wasted cycles, and keeping frame and memory budgets healthy at scale." },
-  { code:"gui",  title:"GUI integration", desc:"Wiring up finished UI to backend logic. I integrate interfaces — I don't design them, and I'm upfront about that." }
+  { code:"data", title:"Data & persistence", desc:"ProfileStore-based data layer with a custom DataManager (dot-notation paths, increments), session safety, and anti-dupe on inventory load — so progress never breaks." },
+  { code:"net",  title:"Networking", desc:"BridgeNet2 across the board, with a deliberate choice of request-response vs fire-and-forget per system to keep traffic lean under load." },
+  { code:"sec",  title:"Anti-exploit & validation", desc:"Server-authoritative everything: ticket generation, reward rolls and currency are validated on the server with session checks. The client only displays." },
+  { code:"gacha", title:"Gacha & economy", desc:"Summon banners with trait rolls and tuned drop rates, jackpot curves modeled with probability theory, all data-driven so balance changes without touching code." },
+  { code:"multi", title:"Multi-place / cross-server", desc:"Universes spanning several places with shared progress — SafeTeleport between hub, reserved match servers, and AFK chambers, carrying player data across boundaries." },
+  { code:"ops",  title:"Live-ops tooling", desc:"Reusable backend framework shared across my games: 20+ typed CMDR admin commands, SoftShutdown for safe restarts, analytics and global limits." }
 ];
 
 /* ============================================================

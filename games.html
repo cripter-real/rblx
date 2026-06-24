@@ -108,8 +108,8 @@
   GAMES.forEach((g, i) => {
     const hasChart = g.chart && g.chart.values && g.chart.values.length > 0;
 
-    const statusClass = g.status==='live'?'live':(g.status==='showcase'?'live':'delisted');
-    const statusLabel = g.status==='live'?'● live':(g.status==='showcase'?'◆ showcase':'○ '+g.status);
+    const statusClass = g.status==='live'?'live':(g.status==='showcase'?'live':(g.status==='in-dev'?'indev':'delisted'));
+    const statusLabel = g.status==='live'?'● live':(g.status==='showcase'?'◆ showcase':(g.status==='in-dev'?'◐ in development':'○ '+g.status));
 
     const linkBtn = g.url
       ? '<a href="'+g.url+'" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Play on Roblox →</a>'
@@ -175,8 +175,9 @@
       '</div>';
     grid.appendChild(card);
 
+    const statusRank = g.status==='live'?0:(g.status==='in-dev'?1:(g.status==='delisted'?2:3));
     const entry={ el:card, playingRaw:0, visitsRaw:parseManual(g.manualVisits),
-                  ccuRaw:parseManual(g.maxCcu), showcase:(g.status==='showcase') };
+                  ccuRaw:parseManual(g.maxCcu), rank:statusRank };
     entries.push(entry);
 
     if (hasChart){
@@ -249,7 +250,7 @@
 
   function resort(){
     entries.slice().sort((a,b)=>
-      (a.showcase-b.showcase)||(b.playingRaw-a.playingRaw)||
+      (a.rank-b.rank)||(b.playingRaw-a.playingRaw)||
       (b.visitsRaw-a.visitsRaw)||(b.ccuRaw-a.ccuRaw)
     ).forEach(e=>grid.appendChild(e.el));
   }

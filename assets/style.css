@@ -82,6 +82,7 @@ body::before{
 .game .cover .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);color:var(--text-faint);font-size:12px;letter-spacing:1px}
 .game .cover .live-tag{position:absolute;top:12px;left:12px;font-family:var(--mono);font-size:11px;padding:5px 11px;border-radius:20px;background:rgba(10,14,18,.82);backdrop-filter:blur(4px);border:1px solid var(--line-bright)}
 .game .cover .live-tag.live{color:var(--accent)}
+.game .cover .live-tag.indev{color:#ffb454}
 .game .cover .live-tag.delisted{color:var(--text-faint)}
 .game .body{padding:24px;display:flex;flex-direction:column;flex:1}
 .game h3{font-size:19px;font-weight:700;letter-spacing:-.4px;line-height:1.2}
